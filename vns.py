@@ -8,41 +8,42 @@ def shake(matriz, rota, custo):
     nova_rota = rota[:]
     novo_custo = custo
 
-    # obtêm os valores de i e j aleatoriamente, valores únicos
-    # (i, j) tem que começar de 1 (excluindo a origem) até o fim da rota
-    i, j = random.sample(range(1, len(rota) - 1), k=2)
+    for i in range(5):
+        # obtêm os valores de i e j aleatoriamente, valores únicos
+        # (i, j) tem que começar de 1 (excluindo a origem) até o fim da rota
+        i, j = random.sample(range(1, len(rota) - 1), k=2)
 
-    # vértice i está no final da rota?
-    if i == (len(rota) - 1):
-        ai, si = i-1, 0         # índice do vértice antecessor e sucessor de i (origem)
-        aj, sj = j-1, j+1       # índice do vértice antecessor e sucessor de j
-    # vértice j está no final da rota?
-    elif j == (len(rota) - 1):
-        ai, si = i-1, i+1       # índice do vértice antecessor e sucessor de i 
-        aj, sj = j-1, 0         # índice do vértice antecessor e sucessor de j
-    # vértice i e j estão no meio da rota
-    else:
-        ai, si = i-1, i+1       # índice do vértice antecessor e sucessor de i
-        aj, sj = j-1, j+1       # índice do vértice antecessor e sucessor de j
+        # vértice i está no final da rota?
+        if i == (len(rota) - 1):
+            ai, si = i-1, 0         # índice do vértice antecessor e sucessor de i (origem)
+            aj, sj = j-1, j+1       # índice do vértice antecessor e sucessor de j
+        # vértice j está no final da rota?
+        elif j == (len(rota) - 1):
+            ai, si = i-1, i+1       # índice do vértice antecessor e sucessor de i 
+            aj, sj = j-1, 0         # índice do vértice antecessor e sucessor de j
+        # vértice i e j estão no meio da rota
+        else:
+            ai, si = i-1, i+1       # índice do vértice antecessor e sucessor de i
+            aj, sj = j-1, j+1       # índice do vértice antecessor e sucessor de j
 
-    # obtêm os valores que serão cortados
-    corte1 = matriz[nova_rota[aj]][nova_rota[j]]     # j com antecessor
-    corte2 = matriz[nova_rota[j]][nova_rota[sj]]     # j com sucessor
-    corte3 = matriz[nova_rota[ai]][nova_rota[i]]     # i com antecessor
-    corte4 = matriz[nova_rota[i]][nova_rota[si]]     # i com sucessor 
+        # obtêm os valores que serão cortados
+        corte1 = matriz[nova_rota[aj]][nova_rota[j]]     # j com antecessor
+        corte2 = matriz[nova_rota[j]][nova_rota[sj]]     # j com sucessor
+        corte3 = matriz[nova_rota[ai]][nova_rota[i]]     # i com antecessor
+        corte4 = matriz[nova_rota[i]][nova_rota[si]]     # i com sucessor 
 
-    # realiza a troca de posições
-    nova_rota[i], nova_rota[j] = nova_rota[j], nova_rota[i]
+        # realiza a troca de posições
+        nova_rota[i], nova_rota[j] = nova_rota[j], nova_rota[i]
 
-    # obtêm os novos valores de ligação
-    ligacao1 = matriz[nova_rota[aj]][nova_rota[j]]     # j com antecessor
-    ligacao2 = matriz[nova_rota[j]][nova_rota[sj]]     # j com sucessor
-    ligacao3 = matriz[nova_rota[ai]][nova_rota[i]]     # i com antecessor
-    ligacao4 = matriz[nova_rota[i]][nova_rota[si]]     # i com sucessor (origem)
+        # obtêm os novos valores de ligação
+        ligacao1 = matriz[nova_rota[aj]][nova_rota[j]]     # j com antecessor
+        ligacao2 = matriz[nova_rota[j]][nova_rota[sj]]     # j com sucessor
+        ligacao3 = matriz[nova_rota[ai]][nova_rota[i]]     # i com antecessor
+        ligacao4 = matriz[nova_rota[i]][nova_rota[si]]     # i com sucessor (origem)
 
-    # realiza o cálculo do novo custo
-    novo_custo -= (corte1 + corte2 + corte3 + corte4)           # cortes
-    novo_custo += (ligacao1 + ligacao2 + ligacao3 + ligacao4)   # ligacoes
+        # realiza o cálculo do novo custo
+        novo_custo -= (corte1 + corte2 + corte3 + corte4)           # cortes
+        novo_custo += (ligacao1 + ligacao2 + ligacao3 + ligacao4)   # ligacoes
 
     return nova_rota, novo_custo
 
