@@ -1,354 +1,173 @@
-﻿#Recupera distância percorrida através do caminho:
-def obter_custo(matriz, caminho):
-    # inicializa o custo total da distância da rota
-    custo_total = 0
+import math
 
-    for i in range(0, len(caminho) - 1, 1):
-        # realiza o somatório da distância para ir da cidade i até a i+1
-        custo_total += matriz[caminho[i]][caminho[i + 1]]
-
-    # adiciona ao custo total o custo de ir da última cidade até a origem
-    # assumindo aqui que SEMPRE a origem é a primeira cidade (0)
-    custo_total += matriz[caminho[-1]][0]
-    return custo_total
-
-# ---------------- Heurística do menor vizinho:
-def menor_vizinhanca(matriz, vertice, numero_vertices):
-    # inicializa o conjunto de vértices
-    conjunto = {i for i in range(numero_vertices)}
-
-    # caminho encontrado pelo algoritmo
-    caminho = []
+def menor_vizinhanca(matriz, numero_vertices, origem):
+    # conjunto de vértices ainda não visitados pela heurística
+    # inicializamos com um conjunto de 0 até N (número de vértices)
+    nao_visitados = {i for i in range(numero_vertices)}
     
-    # distância do caminho a ser encontrado pelo algoritmo 
-    distancia_caminho = 0
-    
-    while len(conjunto) != 1:
-        # retorna o menor elemento não nulo de uma lista de adjacência
-        l = min([e for e in matriz[vertice] if e > 0])
+    # o vértice atual que deve ser visitado
+    # inicialmente visitamos a origem
+    vertice_atual = origem
 
-        # obtêm o índice (vertice) desse menor elemento não nulo
-        i = matriz[vertice].index(l)
+    # caminho encontrado pela heurística
+    caminho_encontrado = []
 
-        if i not in conjunto:
-            matriz[vertice][i] = max(matriz[vertice])
-        else:
-            caminho.append(vertice)
-            conjunto.remove(vertice)
+    # custo total desse caminho
+    custo_caminho = 0
 
-            vertice = i
-            distancia_caminho += l
-    
-        # quando na última iteração (apenas 1 último elemento no conjunto)
-        # adiciona esse último elemento e faz a distância do último elemento com a origem (0)
-        if len(conjunto) == 1:
-            lista = list(conjunto)
-            caminho.append(lista[0])
-            distancia_caminho += matriz[lista[0]][0]
+    # enquanto tiver vértices não visitados, faça:
+    while len(nao_visitados) > 0:
+        # adicionamos o vértice atual ao caminho (estamos visitando-o agora)
+        caminho_encontrado.append(vertice_atual) 
+
+        # removemos esse vértice do conjunto de vértices não visitados
+        nao_visitados.remove(vertice_atual)
+
+        # armazenamos qual é o índice e valor do vértice de menor caminho
+        # saindo do vertice que estamos para o próximo vértice
+        # como não o encontramos ainda, inicializamos com valor infinito
+        menor_vertice_encontrado = math.inf
+        menor_custo_encontrado = math.inf
         
-    return caminho
+        # para cada vértice não visitado ainda, procure o vértice que,
+        # saindo do que estamos até ele (atual -> vizinho), tenha a menor distância
+        for vertice_vizinho in nao_visitados:
+            # obtemos o custo de ir do vértice atual até esse vértice não visitado
+            custo_atual = matriz[vertice_atual][vertice_vizinho]
 
-# ---------- Heurística de Bellmore and NemHauser:
-def bellmore_nemhauser(matriz, vertice1, numero_vertices):
-    # inicializa o conjunto de vértices
-    conjunto = {i for i in range(numero_vertices)}
+            # esse custo é o menor que encontramos até então? (ir de atual -> vizinho)
+            if custo_atual < menor_custo_encontrado:
+                menor_vertice_encontrado = vertice_vizinho
+                menor_custo_encontrado = custo_atual
 
-    print(conjunto)
+        # encontramos um vizinho próximo a esse vértice atual
+        # que seja o menor custo dentre os vértices não visitados?
+        if menor_custo_encontrado != math.inf:
+            # marcamos esse vizinho como o próximo vértice a ser visitado
+            vertice_atual = menor_vertice_encontrado
 
-    # caminho encontrado pelo algoritmo
-    caminho=[]
+            # adicionamos o custo que foi de ir do vértice atual ao vizinho
+            # ao custo total dessa rota gulosa sendo criada
+            custo_caminho += menor_custo_encontrado
 
-    # adiciona a origem a lista com o caminho encontrado
-    caminho.append(vertice1)
+    # adicionamos ao custo total o custo de ir 
+    # do último vértice do caminho até a origem
+    custo_caminho += matriz[caminho_encontrado[-1]][origem]
 
-    # retorna o menor elemento não nulo da lista de adjacência
-    l = min([e for e in matriz[vertice1] if e > 0])
+    # retornamos o caminho encontrado E o custo total dele
+    return caminho_encontrado, custo_caminho
 
-    # obtêm o vértice mais próximo do vértice 1
-    vertice2 = matriz[vertice1].index(l)
 
-    # adicionamos o vértice mais próximo do 1 no caminho
-    # e removemos a origem e esse vértice mais próximo do conjunto de vértices a ser visitado
-    caminho.append(vertice2)
-    conjunto.remove(vertice1)
-    conjunto.remove(vertice2)
+def two_opt(matriz, rota_inicial, custo_rota_inicial):
+    # mantém o custo da rota encontrada até o momento
+    # no início, o melhor custo é o custo da rota inicial
+    custo_melhor_rota = custo_rota_inicial
 
-    #print(vertice1)
-    #print(vertice2)
+    # índice de I e J ideais para fazer o corte e rotação dos vértices
+    # não há valores de início pois eles serão preenchidos abaixo
+    indice_i_ideal = None
+    indice_j_ideal = None
 
-    while len(conjunto) != 0:
-        # inicializa o valor como máximo da lista
-        # precisamos do maior para conseguir comparar e achar o menor
-        valor1 = max(matriz[vertice1])
-        valor2 = max(matriz[vertice2])
+    for i in range(1, len(rota_inicial) - 2):
+        for j in range(i + 1, len(rota_inicial) - 1):
+            # ignoramos possíveis trocas não significativas
+            if j - i == 1:
+                continue
 
-        # procura nas duas extremidades a menor distância
-        for i in conjunto:
-            if matriz[vertice1][i] <= valor1:
-                valor1 = matriz[vertice1][i]
-        for i in conjunto:
-            if matriz[vertice2][i] <= valor2:
-                valor2 = matriz[vertice2][i]
+            # obtêm os custos da rota anterior e da nova rota
+            # primeiro faz o cálculo do custo com o corte de duas arestas (i-1 > i, j > j+1)
+            # depois adiciona ao custo da nova rota o custo da adição das duas arestas (i-1 > j) e (i à j+1)
+            # assumimos aqui que a matriz de distâncias é simétrica (distância de i à j é igual de j à i)]
+            custo_nova_rota = custo_rota_inicial - matriz[rota_inicial[i-1]][rota_inicial[i]] - matriz[rota_inicial[j]][rota_inicial[j+1]]
+            custo_nova_rota = custo_nova_rota + matriz[rota_inicial[i-1]][rota_inicial[j]] + matriz[rota_inicial[i]][rota_inicial[j+1]]
 
-        if valor1 <= valor2:
-            # obtêm o vértice desse valor1
-            ind1 = matriz[vertice1].index(valor1)
+            # ficamos com a nova rota se ela tiver um custo menor que a melhor rota
+            # marcamos também que a rota foi melhorada e há possibilidade de melhorar mais
+            if custo_nova_rota < custo_melhor_rota:
+                custo_melhor_rota = custo_nova_rota
+                indice_i_ideal = i
+                indice_j_ideal = j   
 
-            # adiciona-o no início do caminho
-            caminho.insert(0, ind1)
-
-            # removemos ele do conjunto de vértices a serem visitados
-            conjunto.remove(ind1)
-
-            # definimos o vértice 1 como a nova extremidade
-            vertice1 = ind1
-        else:
-            # obtêm o vértice desse valor2
-            ind2 = matriz[vertice2].index(valor2)
-
-            # adiciona-o no fim do caminho
-            caminho.append(ind2)
-
-            # removemos ele do conjunto de vértices a serem visitados
-            conjunto.remove(ind2)
-
-            # definimos o vértice 2 como a nova extremidade
-            vertice2 = ind2
-
-    return caminho
-
-# Heuristica de Menor Inserção:
-def menor_insercao(matriz, vertice1, numero_vertices):
-    # inicializa o conjunto de vértices
-    conjunto = {i for i in range(numero_vertices)}
-
-    # caminho encontrado pelo algoritmo
-    caminho = []
-
-    # definindo os três primeiros vertices da rota
-    caminho.append(vertice1)
-
-    # retorna o menor elemento não nulo da lista de adjacência
-    l = min([e for e in matriz[vertice1] if e > 0])
-
-    # obtêm o vértice mais próximo do vértice 1
-    vertice2 = matriz[vertice1].index(l)
-
-    # adicionamos o vértice mais próximo do 1 no caminho
-    # e removemos a origem e esse vértice mais próximo do conjunto de vértices a ser visitado
-    caminho.append(vertice2)
-    conjunto.remove(vertice1)
-    conjunto.remove(vertice2)
-
-    # inicializa o valor como máximo da lista
-    # precisamos do maior para conseguir comparar e achar o menor
-    valor1 = max(matriz[vertice1])
-    valor2 = max(matriz[vertice2])
-
-    # procura nas duas extremidades a menor distância
-    for i in conjunto:
-        if matriz[vertice1][i] <= valor1:
-            valor1 = matriz[vertice1][i]
-    for i in conjunto:
-        if matriz[vertice2][i] <= valor2:
-            valor2 = matriz[vertice2][i]
-    
-    if valor1 <= valor2:
-        # obtêm o vértice desse valor1
-        ind1 = matriz[vertice1].index(valor1)
-
-        # adiciona-o no início do caminho
-        caminho.insert(0, ind1)
-
-        # removemos ele do conjunto de vértices a serem visitados
-        conjunto.remove(ind1)
-    
-        # definimos o terceiro vértice a ser visitado
-        vertice3 = ind1
-    else:
-        # obtêm o vértice desse valor2
-        ind2 = matriz[vertice2].index(valor2)
-
-        # adiciona-o no fim do caminho
-        caminho.append(ind2)
-
-        # removemos ele do conjunto de vértices a serem visitados
-        conjunto.remove(ind2)
+    # o algoritmo não conseguiu encontrar um corte ideal?
+    # então não melhorou, retorne a rota que foi recebida
+    if (indice_i_ideal is None):
+        return (rota_inicial, custo_rota_inicial)
         
-        # definimos o terceiro vértice a ser visitado
-        vertice3 = ind2
-
-    # adicionamos o vértice 3 ao caminho
-    caminho.append(vertice3)
-        
-    # percorrendo cada elemento remanescente de "conjunto" (vertices restantes do grafo)
-    # para detectar o ponto de inserçao mínima
-    for vertice in conjunto: 
-        # cada elemento do conjunto é inserido na aresta que gere o menor custo
-        custo = float("inf")
-
-        for j in range(0, len(caminho)):
-            # caso estamos no final do caminho, devemos adicionar
-            # o custo para fechar o ciclo (final -> começo)
-            if j == len(caminho)-1:
-                custo_provisorio = matriz[caminho[j]][vertice] + matriz[vertice][0]    
-            else:
-                custo_provisorio = matriz[vertice][caminho[j]] + matriz[vertice][caminho[j+1]]
-            
-            # encontramos um custo menor do que o atual?
-            if custo_provisorio <= custo:
-                # então, salvamos esse custo como o menor atual
-                custo = custo_provisorio            
-
-                # representa a inserção do vértice no caminho que gere o menor custo
-                indice2 = j+1 
-                indice1 = vertice
-        
-        # inserimos os dois índices ao caminho
-        caminho.insert(indice2, indice1)
-    
-    return caminho
-
-
-# -----------------
-
-def realiza_troca(rota_atual, i, k):
+    # encontramos então uma rota que tem um custo menor?
     # cria a nova rota, inicialmente vazia
-    nova_rota = list()
+    nova_rota = []
 
     # adiciona a rota atual de 0 até o i - 1 à nova rota
-    nova_rota.extend(rota_atual[0:i-1])
+    nova_rota.extend(rota_inicial[0:indice_i_ideal])
 
     # adiciona a rota de i até k em ordem reversa à nova rota
-    nova_rota.extend(reversed(rota_atual[i-1:k]))
+    nova_rota.extend(reversed(rota_inicial[indice_i_ideal:indice_j_ideal+1]))
 
     # adiciona a rota de k até n (tamanho da rota) à nova rota
-    nova_rota.extend(rota_atual[k:])
+    nova_rota.extend(rota_inicial[indice_j_ideal+1:])
 
-    return nova_rota
-
-def two_opt(distancias, rota):
-    print("Entrei no 2opt")
-    # mantém a melhor rota encontrada até o momento
-    # no início, a melhor rota É a rota de entrada
-    melhor_rota = rota
-    
-    # 'flag' que mantém SE o algoritmo conseguiu fazer alguma melhora
-    rota_melhorada = True
-
-    # repete até que nenhuma melhora tenha sido feita
-    while rota_melhorada:
-        # não houve, até o momento, nenhuma melhora (marca como falso)
-        # só haverá melhora se encontrar uma troca que tenha um custo menor
-        rota_melhorada = False
-
-        for i in range(1, len(rota) - 2):
-            for j in range(i + 1, len(rota)):
-                # ignoramos possíveis trocas não significativas
-                if j - i == 1:
-                    continue
-
-                # cria a nova rota
-                nova_rota = realiza_troca(rota, i, j)
-                
-                # obtêm os custos da rota anterior e da nova rota
-                custo_nova_rota = obter_custo(distancias, nova_rota)
-                custo_melhor_rota = obter_custo(distancias, melhor_rota)
-
-                # ficamos com a nova rota se ela tiver um custo menor que a melhor rota
-                # marcamos também que a rota foi melhorada e há possibilidade de melhorar mais
-                if custo_nova_rota < custo_melhor_rota:
-                    melhor_rota = nova_rota
-                    rota_melhorada = True
-        
-        # persiste a melhor rota até o momento (melhor rota existente)
-        # como a rota que deve ser usada para criar a próxima nova rota
-        rota = melhor_rota
-
-    print("saí do 2opt")
-    
-    # retorna a melhor rota encontrada pelo algoritmo
-    return melhor_rota
-
-# -----------------
-
-#Heurísticas de Refinamento.
-
-#Reinsertion.
-#Temos que criar a vizinhança do "caminho" considerando a heurística 2-Opt -
-#trocar cada vértice da solução 2 a 2.
-
-def reinsertion(matriz, rota):
-    print("entrei no reinsertion")
-
-    #vetor onde será armazenada a rota de menor custo encontrada
-    #- não necessariamente é a ótima!
-    novo_caminho=rota
-    #cópia de rota de forma a não modificar a variáivel "rota" - deepcopy
-    vizinho = rota[:]
-    #custo da rota inicial recebida na entrada
-    distancia_inicial=obter_custo(matriz, rota)
-    #para cada componente do vetor "rota", extraia-o e o reinsira na posição j
-    #esse processo gera a quebra de duas arestas para cada elemento i do vetor "rota"
-    for i in range(0,len(rota)):
-        aux=rota[i]
-        #nesse caso, consideramos um grafo com da a db igual db a da -
-        #caso contrário, fazer j variar de zero a len(vizinho).
-        for j in range(i,len(vizinho)):       
-            vizinho.remove(aux)
-            vizinho.insert(j,aux)
-            #Aqui, caso a matriz adjacência seja simétrica, não precisaremos chamar
-            #a função distância toda vez, basta incrementar novas arestas e excluir as
-            #"quebradas"            
-            distancia_vizinho=obter_custo(matriz, vizinho)
-            #se encontrar caminho com custo menor do que o inicial, armazena o novo caminho
-            if distancia_vizinho<distancia_inicial:
-                distancia_inicial=distancia_vizinho
-                novo_caminho = vizinho[:]
-    
-    print("saí do reinsertion")
-    #retorna o novo caminho, se houver.
-    return novo_caminho
+    # retornamos a nova rota e o custo menor
+    return nova_rota, custo_melhor_rota
 
 
-# --------------
+def swap(matriz, rota, custo):
+    # no início, a melhor rota e o melhor custo são os atuais
+    melhor_rota = rota[:]
+    melhor_custo = custo
 
-# ---------------
+    # inicializamos o vetor de nova rota
+    # esse vetor que será modificado para checar se a rota está ok
+    atual_rota = rota[:]
 
-# #==============================================================================
-# #Construção da Solução do Caxeiro Viajante
-# #Iniciando o conjunto de vértices - 0 a d
-# a=set()
-# for i in range(0,d):
-#     a.add(i)
-# print(a)
-# print("-="*40)
-#==============================================================================
-#Teste da heurística da menor_vizinhanca:
-#caminho=menor_vizinhanca(n,0,a)
-#print(caminho)
-#print(distancia(caminho))
-#==============================================================================
-#Teste da Heuristica de BellmoreNemhauser:
-#origem=0
-#caminho=H_BellmoreNemHauser(n,origem,a)
-#print(caminho)
-#print(distancia(caminho))                  
-#==============================================================================       
-#Teste da Heuristica de Menor Inserção:
-#caminho=Menor_Insercao(n,0,a)
-#print(caminho)
-#print
-#print(distancia(caminho))
-#print("-="*40)
-#==============================================================================    
-#Heurísticas de Refinamento.
-#Teste da Reinsertion               
-#print(caminho,Reinsertion(caminho),distancia(Reinsertion(caminho)))
-#============================================================================== 
-
-    
-
+    for i in range(1, len(rota), 1):
+        for j in range(1, len(rota), 1):
+            # não faz sentido fazer uma troca de dois índices iguais
+            if i == j:
+                continue
             
-        
+            # vértice i está no final da rota?
+            if i == (len(rota) - 1):
+                ai, si = i-1, 0         # índice do vértice antecessor e sucessor de i (origem)
+                aj, sj = j-1, j+1       # índice do vértice antecessor e sucessor de j
+            # vértice j está no final da rota?
+            elif j == (len(rota) - 1):
+                ai, si = i-1, i+1       # índice do vértice antecessor e sucessor de i 
+                aj, sj = j-1, 0         # índice do vértice antecessor e sucessor de j
+            # vértice i e j estão no meio da rota
+            else:
+                ai, si = i-1, i+1       # índice do vértice antecessor e sucessor de i
+                aj, sj = j-1, j+1       # índice do vértice antecessor e sucessor de j
 
+            # obtêm os valores que serão cortados
+            corte1 = matriz[atual_rota[aj]][atual_rota[j]]     # j com antecessor
+            corte2 = matriz[atual_rota[j]][atual_rota[sj]]     # j com sucessor
+            corte3 = matriz[atual_rota[ai]][atual_rota[i]]     # i com antecessor
+            corte4 = matriz[atual_rota[i]][atual_rota[si]]     # i com sucessor 
+
+            # realiza a troca de posições
+            atual_rota[i], atual_rota[j] = atual_rota[j], atual_rota[i]
+
+            # obtêm os novos valores de ligação
+            ligacao1 = matriz[atual_rota[aj]][atual_rota[j]]     # j com antecessor
+            ligacao2 = matriz[atual_rota[j]][atual_rota[sj]]     # j com sucessor
+            ligacao3 = matriz[atual_rota[ai]][atual_rota[i]]     # i com antecessor
+            ligacao4 = matriz[atual_rota[i]][atual_rota[si]]     # i com sucessor (origem)
+
+            # inicializa o atual custo com o custo inicial
+            atual_custo = custo
+
+            # realiza o cálculo do novo custo
+            atual_custo -= (corte1 + corte2 + corte3 + corte4)           # cortes
+            atual_custo += (ligacao1 + ligacao2 + ligacao3 + ligacao4)   # ligacoes
+
+            # o custo atual é menor que o melhor custo atual?
+            if atual_custo < melhor_custo:
+                # salva essa rota como a menor e também o seu custo
+                melhor_rota = atual_rota[:]
+                melhor_custo = atual_custo
+            
+            # desfaça a alteração feita, evitando criar uma nova cópia de vetor
+            # para a próxima iteração do laço
+            atual_rota[i], atual_rota[j] = atual_rota[j], atual_rota[i]
+    
+    return melhor_rota, melhor_custo

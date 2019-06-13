@@ -1,25 +1,28 @@
 import heuristicas
 
-def vnd(matriz, rota):
+def vnd(matriz, rota_inicial, custo_rota_inicial):
+    # por enquanto a melhor rota é a inicial
+    melhor_rota = rota_inicial
+    custo_melhor_rota = custo_rota_inicial
+
     # número de heurísticas
     r = 2
 
     # tipo de heurística atual
     k = 1
-
+    
     while (k <= r):
         if k == 1:
-            nova_rota = heuristicas.two_opt(matriz, rota)
+            nova_rota, custo_nova_rota = heuristicas.two_opt(matriz, melhor_rota, custo_melhor_rota)
         elif k == 2:
-            nova_rota = heuristicas.reinsertion(matriz, rota)
+            nova_rota, custo_nova_rota = heuristicas.swap(matriz, melhor_rota, custo_melhor_rota)
         
-        custo_nova_rota = heuristicas.obter_custo(matriz, nova_rota)
-        custo_rota_inicial = heuristicas.obter_custo(matriz, rota)
-
-        if (custo_nova_rota < custo_rota_inicial):
-            rota = nova_rota
+        # se a nova rota é melhor que a atual 
+        if (custo_nova_rota < custo_melhor_rota):
+            melhor_rota = nova_rota
+            custo_melhor_rota = custo_nova_rota
             k = 1
         else:
             k = k + 1
 
-    return rota
+    return melhor_rota, custo_melhor_rota

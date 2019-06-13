@@ -1,59 +1,91 @@
-import sys
-import math
+from math import sqrt
 
-def ler_matriz_adjacencia(arquivo):
-    return [[int(x) for x in arquivo[i].split()] for i in range(len(arquivo))]
+def ler_descricao(caminho_instancias, nome_arquivo):
+    descricoes = []
 
-def ler_matriz_pontos(arquivo):
-    pontos = [tuple(map(float, arquivo[i].split()[1:])) for i in range(len(arquivo))]
-    matriz = [[0 for i in range(len(arquivo))] for j in range(len(arquivo))] 
+    with open("{}/{}".format(caminho_instancias, nome_arquivo), "r") as arquivo:
+        # lê todas as linhas do arquivo MAS ignorando as 6 primeiras
+        # as 6 primeiras linhas tem informações de como interpretar os arquivos
+        linhas = arquivo.readlines()[6:]
 
-    counti = 0
-    countj = 0
+        for linha in linhas:
+            # removemos o marcador -) que existe pra indicar que é
+            # uma informação de uma instância
+            linha = linha.replace("-)", "")
 
-    for i in range(0, len(pontos), 1):
-        counti += 1
+            # dividimos o nome da instância de seu valor ótimo
+            linha = linha.strip().split("=")
 
-        for j in range(i, len(pontos), 1):
-            Xi, Yi = pontos[i]
-            Xj, Yj = pontos[j]
+            # obtêm o nome da instância e o seu valor ótimo
+            nome_instancia = linha[0].strip()
+            solucao_otima = int(linha[1])
 
-            v = math.sqrt(((Xi - Xj) ** 2) + ((Yi - Yj) ** 2))
+            # adicionamos a informação dessa instância na lista de instâncias 
+            descricoes.append([nome_instancia, solucao_otima])
+    
+    return descricoes
+            
 
-            if abs(v - int(v)) > 0.5:
-                v = math.ceil(v)
-            else:
-                v = math.floor(v)
 
-            matriz[i][j] = v
-            matriz[j][i] = v
-
-            countj += 1
-
-    return matriz
-
-def ler_matriz(arquivo):
-    # obtemos a forma de armazenamento dos dados (se é matriz de adjacência ou pontos)
-    tipo_dados = arquivo[2]
-
-    # removemos as 3 primeiras linhas pois não vamos utilizar mais para a leitura
-    del arquivo[0:3]
-
-    if tipo_dados == "EDGE_WEIGHT_SECTION":
-        # realiza a leitura da matriz de adjacência
-        return ler_matriz_adjacencia(arquivo)
-    else:
-        # removemos o EOF, pois não é necessário em Python
-        del arquivo[-1]
-
-        # realiza a leitura dos pontos para uma matriz de adjacências
-        return ler_matriz_pontos(arquivo)
-
-def ler_instancia(tipo_instancia, nome_arquivo):
-    if tipo_instancia == "teste":
-        caminho_arquivo = "./instancias/instancias_teste/" + nome_arquivo
-    else:
-        caminho_arquivo = "./instancias/instancias_tsp_cup/" + nome_arquivo
-        
+def ler_instancia(caminho_arquivo):
     with open(caminho_arquivo, "r") as arquivo:
-        return ler_matriz([linha.strip() for linha in arquivo])
+        # faz a leitura do nome da instância [ex: NAME bayg29]
+        # ignoramos pois não é preciso do nome da instância (por isso o _)
+        _ = next(arquivo)
+
+        # obtêm a dimensão da matriz dessa instância [ex: DIMENSION 29]
+        dimensao = int(next(arquivo).split(":")[1].strip())
+        
+        # obtêm o tipo dessa entrada [ex: EDGE_WEIGHT_SECTION]
+        tipo = next(arquivo).strip()
+
+        # inicializa a matriz com a dimensão lida, com zeros
+        # assume-se que as instâncias são matrizes simétricas
+        matriz = [[0 for _ in range(dimensao)] for _ in range(dimensao)]
+
+        # é uma matriz de adjacência pronta?
+        if tipo == "EDGE_WEIGHT_SECTION":
+            for i in range(dimensao):
+                # recupera a próxima linha de valores da matriz no arquivo
+                linha = next(arquivo).split()
+
+                for j in range(dimensao):
+                    # preenche cada linha da matriz com os valores lidos
+                    # lê o próximo [j] da linha do arquivo e muda o [j] da matriz
+                    matriz[i][j] = int(linha[j])
+        
+        # é uma lista de pontos?
+        if tipo == "DISPLAY_DATA_SECTION":
+            # lista de pontos (distâncias)
+            pontos = []
+
+            for _ in range(dimensao):
+                # recupera a próxima linha do arquivo
+                linha = next(arquivo).split()
+
+                # da linha, obtêm os valores de x e y
+                x, y = float(linha[1]), float(linha[2])
+
+                # adiciona esses pontos à lista de pontos
+                pontos.append((x, y))
+            
+            for i in range(dimensao):
+                # obtemos os pontos X, Y de i
+                xi, yi = pontos[i]
+
+                for j in range(i, dimensao):
+                    # obtemos os pontos X, Y de j
+                    xj, yj = pontos[j]
+
+                    # realiza o cálculo da distância euclidiana de dois pontos
+                    d = sqrt( ((xi-xj)**2) + ((yi-yj)**2) )
+
+                    # arredonda o valor para o mais próximo inteiro
+                    d = round(d)
+
+                    # salva o valor da distância na matriz de adjacência
+                    matriz[i][j] = d
+                    matriz[j][i] = d
+
+    # retorna a matriz e a dimensão da matriz lida
+    return (matriz, dimensao)
